@@ -1,12 +1,12 @@
-day = "day01"
+day = "dayXX"
 
 def part_one(filename: str) -> int:
     with open(filename, 'r') as file:
-        return len(file.readlines)
+        return 1
 
 def part_two(filename: str) -> int:
     with open(filename, 'r') as file:
-        return len(file.readlines)
+        return 1
 
 
 if __name__ == '__main__':
