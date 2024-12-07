@@ -26,8 +26,61 @@ def move_in_direction(current_position: tuple, direction: tuple) -> tuple:
 def hits_obstacle(obstacles: list, position: tuple) -> bool:
     return (position[0], position[1]) in obstacles
 
-def find_new_obstacle_positions(lines: list) -> int:
-    new_obstacle_count = 0
+def is_guard_in_loop(starting_point: tuple, obstacles: list, dimensions: tuple) -> bool:
+    guard_path = [starting_point]
+    current_point = starting_point
+    current_direction = 0
+    while is_in_bounds(dimensions, current_point):
+        direction = directions[current_direction]
+        next_point = move_in_direction(current_point, direction)
+        while (next_point[0], next_point[1]) in obstacles:
+            # next_point would hit an obstacle, so instead rotate 90 degrees
+            current_direction = (current_direction + 1) % 4
+            direction = directions[current_direction]
+            next_point = move_in_direction(current_point, direction)
+        # should be using a set so we don't have to check this every time, but it doesn't maintain order 
+        # so it makes debugging more difficult...
+        if next_point not in guard_path:
+            if is_in_bounds(dimensions, next_point):
+                guard_path.append(next_point)
+        else:
+            return True
+        current_point = next_point
+    return False
+
+# def is_guard_in_loop(lines: list) -> bool:
+#     obstacles = []
+#     starting_point = None
+#     for row, line in enumerate(lines):
+#         for col, char in enumerate(line):
+#             if char == "#":
+#                 obstacles.append((row, col))
+#             elif char == "^":
+#                 starting_point = (row, col, up)
+
+#     guard_path = [starting_point]
+#     dimensions = (len(lines)-1, len(lines[0].strip())-1)
+#     current_point = starting_point
+#     current_direction = 0
+#     while is_in_bounds(dimensions, current_point):
+#         direction = directions[current_direction]
+#         next_point = move_in_direction(current_point, direction)
+#         while (next_point[0], next_point[1]) in obstacles:
+#             # next_point would hit an obstacle, so instead rotate 90 degrees
+#             current_direction = (current_direction + 1) % 4
+#             direction = directions[current_direction]
+#             next_point = move_in_direction(current_point, direction)
+#         # should be using a set so we don't have to check this every time, but it doesn't maintain order 
+#         # so it makes debugging more difficult...
+#         if next_point not in guard_path:
+#             if is_in_bounds(dimensions, next_point):
+#                 guard_path.append(next_point)
+#         else:
+#             return True
+#         current_point = next_point
+#     return False
+
+def get_obstacles_and_starting_point(lines: list) -> list:
     obstacles = []
     starting_point = None
     for row, line in enumerate(lines):
@@ -36,7 +89,25 @@ def find_new_obstacle_positions(lines: list) -> int:
                 obstacles.append((row, col))
             elif char == "^":
                 starting_point = (row, col, up)
+    return obstacles, starting_point
 
+def find_new_obstacle_positions(starting_obstacles: list, guard_path: list, dimensions: tuple) -> int:
+    new_obstacle_position = set()
+    starting_point = (guard_path[0][0], guard_path[0][1])
+    guard_path_length = len(guard_path)
+    for i, guard_location in enumerate(guard_path[1:]):
+        position = (guard_location[0], guard_location[1])
+        if position == starting_point:
+            # can't put an obstacle on the guard's starting location
+            continue
+        print(f"Progress: {i/guard_path_length*100}%")
+        if position not in new_obstacle_position and is_guard_in_loop(starting_point, starting_obstacles + [position], dimensions):
+            print(f"{position} - {guard_location[2]} created a loop!")
+            new_obstacle_position.add(position)
+    return len(new_obstacle_position)
+
+def calculate_guard_path(lines: list) -> list:
+    obstacles, starting_point = get_obstacles_and_starting_point(lines)
     guard_path = [starting_point]
     dimensions = (len(lines)-1, len(lines[0].strip())-1)
     current_point = starting_point
@@ -44,106 +115,48 @@ def find_new_obstacle_positions(lines: list) -> int:
     while is_in_bounds(dimensions, current_point):
         direction = directions[current_direction]
         next_point = move_in_direction(current_point, direction)
-        # next_point = (tuple(np.add(current_point, direction)), direction)
-        while hits_obstacle(obstacles, next_point):
+        while (next_point[0], next_point[1]) in obstacles:
             # next_point would hit an obstacle, so instead rotate 90 degrees
             current_direction = (current_direction + 1) % 4
             direction = directions[current_direction]
-            # next_point = (tuple(np.add(current_point, direction)), direction)
             next_point = move_in_direction(current_point, direction)
-
-
-        if is_in_bounds(dimensions, next_point):
-            if is_potential_obstacle_location(guard_path, next_point):
-                new_obstacle_count += 1
-            guard_path.append(next_point)
-            # symbol = "^"
-            # if up is direction:
-            #     symbol = "^"
-            # elif down is direction:
-            #     symbol = "v"
-            # elif left is direction:
-            #     symbol = "<"
-            # elif right is direction:
-            #     symbol = ">"
-        
-            # current_line = lines[next_point[0]]
-            # updated_line = current_line[:next_point[1]] + symbol + current_line[next_point[1]+1:]
-            # lines = lines[:next_point[0]] + [updated_line] + lines[next_point[0]+1:]
-        current_point = next_point
-
-    # for line in lines:
-    #     print(line)
-    return new_obstacle_count
-
-def calculate_guard_path(lines: list) -> list:
-    obstacles = []
-    starting_point = None
-    for row, line in enumerate(lines):
-        for col, char in enumerate(line):
-            if char == "#":
-                obstacles.append((row, col))
-            elif char == "^":
-                starting_point = (row, col)
-
-    guard_path = [starting_point]
-    dimensions = (len(lines)-1, len(lines[0].strip())-1)
-    current_point = starting_point
-    current_direction = 0
-    while is_in_bounds(dimensions, current_point):
-        direction = directions[current_direction]
-        next_point = tuple(np.add(current_point, direction))
-        while next_point in obstacles:
-            # next_point would hit an obstacle, so instead rotate 90 degrees
-            current_direction = (current_direction + 1) % 4
-            direction = directions[current_direction]
-            next_point = tuple(np.add(current_point, direction))
         # should be using a set so we don't have to check this every time, but it doesn't maintain order 
         # so it makes debugging more difficult...
         if next_point not in guard_path:
             if is_in_bounds(dimensions, next_point):
                 guard_path.append(next_point)
-                symbol = "^"
-                if up is direction:
-                    symbol = "^"
-                elif down is direction:
-                    symbol = "v"
-                elif left is direction:
-                    symbol = "<"
-                elif right is direction:
-                    symbol = ">"
-            
-                current_line = lines[next_point[0]]
-                updated_line = current_line[:next_point[1]] + symbol + current_line[next_point[1]+1:]
-                lines = lines[:next_point[0]] + [updated_line] + lines[next_point[0]+1:]
         current_point = next_point
 
-    for line in lines:
-        print(line)
     return guard_path
+
+def count_unique_guard_positions(guard_path: list) -> int:
+    unique_positions = set()
+    for position in guard_path:
+        unique_positions.add((position[0], position[1]))
+    return len(unique_positions)
 
 def part_one(filename: str) -> int:
     with open(filename, 'r') as file:
         lines = [line.strip() for line in file.readlines()]
         guard_path = calculate_guard_path(lines)
-        return len(guard_path)
+        unique_positions = count_unique_guard_positions(guard_path)
+        print(f"Guard travelled to {unique_positions} positions")
+        return unique_positions
 
 def part_two(filename: str) -> int:
     with open(filename, 'r') as file:
         lines = [line.strip() for line in file.readlines()]
-        return find_new_obstacle_positions(lines)
-
+        dimensions = (len(lines)-1, len(lines[0].strip())-1)
+        obstacles, starting_point = get_obstacles_and_starting_point(lines)
+        return find_new_obstacle_positions(obstacles, calculate_guard_path(lines), dimensions)
 
 if __name__ == '__main__':
     test_file = f'python/{day}/test.txt'
     input_file = f'python/{day}/input.txt'
-    edge_cases_file = f'python/{day}/edge_cases.txt'
 
     test = part_one(test_file)
     print(test)
     assert test == 41
-    # edge_cases = part_one(edge_cases_file)
-    # assert edge_cases == 3
 
     p1 = part_one(input_file)
     print(f"Part One: {p1}")
