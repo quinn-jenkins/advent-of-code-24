@@ -29,7 +29,7 @@ def hits_obstacle(obstacles: list, position: tuple) -> bool:
 def is_guard_in_loop(starting_point: tuple, obstacles: list, dimensions: tuple) -> bool:
     guard_path = [starting_point]
     current_point = starting_point
-    current_direction = 0
+    current_direction = directions.index(starting_point[2])
     while is_in_bounds(dimensions, current_point):
         direction = directions[current_direction]
         next_point = move_in_direction(current_point, direction)
@@ -47,38 +47,6 @@ def is_guard_in_loop(starting_point: tuple, obstacles: list, dimensions: tuple) 
             return True
         current_point = next_point
     return False
-
-# def is_guard_in_loop(lines: list) -> bool:
-#     obstacles = []
-#     starting_point = None
-#     for row, line in enumerate(lines):
-#         for col, char in enumerate(line):
-#             if char == "#":
-#                 obstacles.append((row, col))
-#             elif char == "^":
-#                 starting_point = (row, col, up)
-
-#     guard_path = [starting_point]
-#     dimensions = (len(lines)-1, len(lines[0].strip())-1)
-#     current_point = starting_point
-#     current_direction = 0
-#     while is_in_bounds(dimensions, current_point):
-#         direction = directions[current_direction]
-#         next_point = move_in_direction(current_point, direction)
-#         while (next_point[0], next_point[1]) in obstacles:
-#             # next_point would hit an obstacle, so instead rotate 90 degrees
-#             current_direction = (current_direction + 1) % 4
-#             direction = directions[current_direction]
-#             next_point = move_in_direction(current_point, direction)
-#         # should be using a set so we don't have to check this every time, but it doesn't maintain order 
-#         # so it makes debugging more difficult...
-#         if next_point not in guard_path:
-#             if is_in_bounds(dimensions, next_point):
-#                 guard_path.append(next_point)
-#         else:
-#             return True
-#         current_point = next_point
-#     return False
 
 def get_obstacles_and_starting_point(lines: list) -> list:
     obstacles = []
@@ -100,8 +68,8 @@ def find_new_obstacle_positions(starting_obstacles: list, guard_path: list, dime
         if position == starting_point:
             # can't put an obstacle on the guard's starting location
             continue
-        print(f"Progress: {i/guard_path_length*100}%")
-        if position not in new_obstacle_position and is_guard_in_loop(starting_point, starting_obstacles + [position], dimensions):
+        print(f"{guard_location} Progress: {i/guard_path_length*100}%")
+        if position not in new_obstacle_position and is_guard_in_loop(guard_path[0], starting_obstacles + [position], dimensions):
             print(f"{position} - {guard_location[2]} created a loop!")
             new_obstacle_position.add(position)
     return len(new_obstacle_position)
