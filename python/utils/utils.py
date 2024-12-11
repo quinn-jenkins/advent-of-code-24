@@ -12,6 +12,14 @@ def read_file_as_ints(filename: str, delimiter=' ') -> list:
             row = [int(x) for x in line.split(delimiter)]
             data.append(row)
         return data
+    
+def read_file_as_int_grid(filename: str) -> list:
+    with open(filename, 'r') as file:
+        data = []
+        for row, line in file.read().splitlines():
+            data[row] = [int(col) for col in line]
+        return data
+                
 
 # for a dataset where each row is the same length, returns a tuple of the 
 # length and width of the data
